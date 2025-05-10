@@ -1,0 +1,164 @@
+/**
+ * Public stilleri
+ *
+ * @since      1.0.0
+ * @package    Yatirim_Portfoyu_Takip
+ */
+
+/* Genel */
+.yatirim-portfoyu-login-container,
+.yatirim-portfoyu-register-container {
+    padding: 20px 0;
+}
+
+/* Form Stilleri */
+.yatirim-portfoyu-login-container .card,
+.yatirim-portfoyu-register-container .card {
+    border: none;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.yatirim-portfoyu-login-container .card-header,
+.yatirim-portfoyu-register-container .card-header {
+    padding: 1rem;
+}
+
+/* Tablo Stilleri */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table th {
+    white-space: nowrap;
+}
+
+/* Kartlar */
+.yatirim-portfoyu-card {
+    transition: transform 0.2s ease-in-out;
+    margin-bottom: 1.5rem;
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.yatirim-portfoyu-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* Grafikler */
+.chart-container {
+    position: relative;
+    min-height: 250px;
+    max-height: 400px;
+    width: 100%;
+}
+
+/* İşlem Formları */
+.transaction-form .form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Buttonlar */
+.btn-success {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+.btn-success:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+}
+
+/* Badges */
+.badge {
+    font-weight: 600;
+    padding: 0.35em 0.65em;
+}
+
+/* Kar/Zarar Renkleri */
+.text-profit {
+    color: #28a745 !important;
+}
+
+.text-loss {
+    color: #dc3545 !important;
+}
+
+/* Animasyonlar */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Responsive Düzenlemeler */
+@media (max-width: 767px) {
+    .table-responsive {
+        border: 0;
+    }
+    
+    .table-responsive table {
+        border: 0;
+    }
+    
+    .table-responsive table thead {
+        display: none;
+    }
+    
+    .table-responsive table tr {
+        margin-bottom: 1rem;
+        display: block;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+    }
+    
+    .table-responsive table td {
+        display: block;
+        text-align: right;
+        padding: 0.75rem;
+        position: relative;
+        border-top: 0;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .table-responsive table td:before {
+        content: attr(data-label);
+        float: left;
+        font-weight: bold;
+    }
+    
+    .table-responsive table td:last-child {
+        border-bottom: 0;
+    }
+}
+
+/* Modal Stilleri */
+.modal-content {
+    border: none;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+    border-bottom: 1px solid #e9ecef;
+    background-color: #f8f9fa;
+}
+
+.modal-footer {
+    border-top: 1px solid #e9ecef;
+    background-color: #f8f9fa;
+}
