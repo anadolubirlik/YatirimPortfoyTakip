@@ -102,10 +102,10 @@ class Yatirim_Portfoyu_Takip_Membership {
         
         // Mevcut üyelik süresi varsa ve hala geçerliyse, ona ekle
         if ($user->membership_type === 'premium' && $user->membership_expires && strtotime($user->membership_expires) > time()) {
-            $expiry_date = date('Y-m-d H:i:s', strtotime($user->membership_expires . " + " . $duration_months . " months"));
+            $expiry_date = date('Y-m-d H:i:s', strtotime($user->membership_expires . " + {$duration_months} months"));
         } else {
             // Yeni süre başlat
-            $expiry_date = date('Y-m-d H:i:s', strtotime("+ " . $duration_months . " months"));
+            $expiry_date = date('Y-m-d H:i:s', strtotime("+ {$duration_months} months"));
         }
         
         // Üyelik güncelle
@@ -436,5 +436,267 @@ class Yatirim_Portfoyu_Takip_Membership {
         
         // Premium üyelik satın alma işlemi
         return $this->purchase_premium($user_id, 'credit_card', $plan_amount, 'TRY', $plan_months);
+    }
+}
+/**
+* KALAN BÖLÜMDEN DEVAM
+*/
+
+                $crypto_table,
+                $update_data,
+                array('id' => $crypto_id)
+            );
+            
+            if ($result === false) {
+                return new WP_Error('update_failed', __('Kripto para güncellenemedi.', 'yatirim-portfoyu-takip'));
+            }
+            
+            return array(
+                'success' => true,
+                'message' => __('Kripto para başarıyla güncellendi.', 'yatirim-portfoyu-takip'),
+                'crypto_id' => $crypto_id
+            );
+        } else {
+            return new WP_Error('no_data', __('Güncellenecek veri yok.', 'yatirim-portfoyu-takip'));
+        }
+    }
+
+    /**
+     * Altın bilgilerini günceller
+     *
+     * @param int $gold_id Altın ID
+     * @param array $data Güncellenecek veriler
+     * @return array|WP_Error Sonuç
+     */
+    public function update_gold($gold_id, $data) {
+        global $wpdb;
+        $gold_table = $wpdb->prefix . 'ypt_gold';
+        
+        // Altının varlığını kontrol et
+        $gold = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT * FROM $gold_table WHERE id = %d",
+                $gold_id
+            )
+        );
+        
+        if (!$gold) {
+            return new WP_Error('gold_not_found', __('Altın bulunamadı.', 'yatirim-portfoyu-takip'));
+        }
+        
+        // Güncellenecek verileri hazırla
+        $update_data = array();
+        
+        if (isset($data['current_price']) && is_numeric($data['current_price'])) {
+            $update_data['current_price'] = floatval($data['current_price']);
+        }
+        
+        if (!empty($update_data)) {
+            $update_data['last_update'] = current_time('mysql');
+            
+            $result = $wpdb->update(
+                $gold_table,
+                $update_data,
+                array('id' => $gold_id)
+            );
+            
+            if ($result === false) {
+                return new WP_Error('update_failed', __('Altın güncellenemedi.', 'yatirim-portfoyu-takip'));
+            }
+            
+            return array(
+                'success' => true,
+                'message' => __('Altın başarıyla güncellendi.', 'yatirim-portfoyu-takip'),
+                'gold_id' => $gold_id
+            );
+        } else {
+            return new WP_Error('no_data', __('Güncellenecek veri yok.', 'yatirim-portfoyu-takip'));
+        }
+    }
+
+    /**
+     * Bir hissenin detaylarını alır
+     *
+     * @param int $stock_id Hisse ID
+     * @return array|WP_Error Hisse detayları veya hata
+     */
+    public function get_stock_details($stock_id) {
+        global $wpdb;
+        
+        // Hisse bilgilerini al
+        $stocks_table = $wpdb->prefix . 'ypt_stocks';
+        
+        $stock = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT * FROM $stocks_table WHERE id = %d",
+                $stock_id
+            ),
+            ARRAY_A
+        );
+        
+        if (!$stock) {
+            return new WP_Error('stock_not_found', __('Hisse bulunamadı.', 'yatirim-portfoyu-takip'));
+        }
+        
+        // Hisse işlemlerini al
+        $transactions_table = $wpdb->prefix . 'ypt_stock_transactions';
+        
+        $transactions = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT * FROM $transactions_table WHERE stock_id = %d ORDER BY transaction_date DESC",
+                $stock_id
+            ),
+            ARRAY_A
+        );
+        
+        // Temettüleri al
+        $dividends_table = $wpdb->prefix . 'ypt_dividends';
+        
+        $dividends = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT * FROM $dividends_table WHERE stock_id = %d ORDER BY dividend_date DESC",
+                $stock_id
+            ),
+            ARRAY_A
+        );
+        
+        // Temettü toplamı
+        $total_dividends = 0;
+        foreach ($dividends as $dividend) {
+            $total_dividends += floatval($dividend['amount']);
+        }
+        
+        // Kar/zarar hesapla
+        $current_value = floatval($stock['total_shares']) * floatval($stock['current_price']);
+        $total_cost = floatval($stock['total_shares']) * floatval($stock['average_cost']);
+        $profit = $current_value - $total_cost;
+        $profit_percentage = $total_cost > 0 ? ($profit / $total_cost) * 100 : 0;
+        
+        return array(
+            'stock' => $stock,
+            'transactions' => $transactions,
+            'dividends' => $dividends,
+            'total_dividends' => $total_dividends,
+            'profit' => $profit,
+            'profit_percentage' => $profit_percentage,
+            'current_value' => $current_value
+        );
+    }
+
+    /**
+     * Bir kripto paranın detaylarını alır
+     *
+     * @param int $crypto_id Kripto ID
+     * @return array|WP_Error Kripto detayları veya hata
+     */
+    public function get_crypto_details($crypto_id) {
+        global $wpdb;
+        
+        // Kripto bilgilerini al
+        $crypto_table = $wpdb->prefix . 'ypt_crypto';
+        
+        $crypto = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT * FROM $crypto_table WHERE id = %d",
+                $crypto_id
+            ),
+            ARRAY_A
+        );
+        
+        if (!$crypto) {
+            return new WP_Error('crypto_not_found', __('Kripto para bulunamadı.', 'yatirim-portfoyu-takip'));
+        }
+        
+        // Kripto işlemlerini al
+        $transactions_table = $wpdb->prefix . 'ypt_crypto_transactions';
+        
+        $transactions = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT * FROM $transactions_table WHERE crypto_id = %d ORDER BY transaction_date DESC",
+                $crypto_id
+            ),
+            ARRAY_A
+        );
+        
+        // Kar/zarar hesapla
+        $current_value = floatval($crypto['total_amount']) * floatval($crypto['current_price']);
+        $total_cost = floatval($crypto['total_amount']) * floatval($crypto['average_cost']);
+        $profit = $current_value - $total_cost;
+        $profit_percentage = $total_cost > 0 ? ($profit / $total_cost) * 100 : 0;
+        
+        return array(
+            'crypto' => $crypto,
+            'transactions' => $transactions,
+            'profit' => $profit,
+            'profit_percentage' => $profit_percentage,
+            'current_value' => $current_value
+        );
+    }
+
+    /**
+     * Bir altın kaydının detaylarını alır
+     *
+     * @param int $gold_id Altın ID
+     * @return array|WP_Error Altın detayları veya hata
+     */
+    public function get_gold_details($gold_id) {
+        global $wpdb;
+        
+        // Altın bilgilerini al
+        $gold_table = $wpdb->prefix . 'ypt_gold';
+        
+        $gold = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT * FROM $gold_table WHERE id = %d",
+                $gold_id
+            ),
+            ARRAY_A
+        );
+        
+        if (!$gold) {
+            return new WP_Error('gold_not_found', __('Altın bulunamadı.', 'yatirim-portfoyu-takip'));
+        }
+        
+        // Altın işlemlerini al
+        $transactions_table = $wpdb->prefix . 'ypt_gold_transactions';
+        
+        $transactions = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT * FROM $transactions_table WHERE gold_id = %d ORDER BY transaction_date DESC",
+                $gold_id
+            ),
+            ARRAY_A
+        );
+        
+        // Kar/zarar hesapla
+        $current_value = floatval($gold['total_weight']) * floatval($gold['current_price']);
+        $total_cost = floatval($gold['total_weight']) * floatval($gold['average_cost']);
+        $profit = $current_value - $total_cost;
+        $profit_percentage = $total_cost > 0 ? ($profit / $total_cost) * 100 : 0;
+        
+        // Altın türü adını belirle
+        $gold_types = array(
+            'gram' => __('Gram Altın', 'yatirim-portfoyu-takip'),
+            'ceyrek' => __('Çeyrek Altın', 'yatirim-portfoyu-takip'),
+            'yarim' => __('Yarım Altın', 'yatirim-portfoyu-takip'),
+            'tam' => __('Tam Altın', 'yatirim-portfoyu-takip'),
+            'cumhuriyet' => __('Cumhuriyet Altını', 'yatirim-portfoyu-takip'),
+            'ata' => __('Ata Altın', 'yatirim-portfoyu-takip'),
+            'resat' => __('Reşat Altın', 'yatirim-portfoyu-takip'),
+            'hamit' => __('Hamit Altın', 'yatirim-portfoyu-takip'),
+            'ons' => __('Ons Altın', 'yatirim-portfoyu-takip'),
+            'gumus' => __('Gümüş', 'yatirim-portfoyu-takip')
+        );
+        
+        $gold_type_name = isset($gold_types[$gold['gold_type']]) ? $gold_types[$gold['gold_type']] : $gold['gold_type'];
+        
+        return array(
+            'gold' => $gold,
+            'gold_type_name' => $gold_type_name,
+            'transactions' => $transactions,
+            'profit' => $profit,
+            'profit_percentage' => $profit_percentage,
+            'current_value' => $current_value
+        );
     }
 }
